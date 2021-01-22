@@ -3,11 +3,7 @@
   "name": "Extension Name",
   "version": "0.1",
   "description": "Some Description",
-  "permissions": [
-    "webRequest",
-    "tabs",
-    "<all_urls>"
-  ],
+  "permissions": ["webRequest", "tabs", "<all_urls>", "http://192.249.18.236:3000"],
   "background": {
     "scripts": ["static/js/background.js"],
     "persistent" : true
