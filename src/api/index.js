@@ -11,8 +11,7 @@ const getReviewInspectPage = (url, callback) => {
     axios
       .post(apiUrl, { url: url }, { headers: headers })
       .then((res) => {
-        console.warn(url);
-        callback(url);
+        callback(res.data); // res.data 를 url로 해서 새로운 탭 열기
       })
       .catch((e) => console.error(e));
 }
