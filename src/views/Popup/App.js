@@ -1,37 +1,33 @@
-import React from 'react'
-import './App.css'
+import React, { useState } from "react";
+import "./App.css";
 
-// function App() {
-//   return (
-//     <div className="App">
-//       <header className="App-header">
-//         <p>Popup page</p>
-//         <p>
-//           Edit <code>src/views/Popup/App.js</code> and save.
-//         </p>
-//         <a
-//           className="App-link"
-//           href="https://reactjs.org"
-//           target="_blank"
-//           rel="noopener noreferrer"
-//         >
-//           Learn React
-//         </a>
-//       </header>
-//     </div>
-//   );
-// }
-
-import Users from "./Users";
-import InspectButton from "./InspectButton"
+import InspectButton from "./InspectButton";
+import GitHubButton from "./GitHubButton";
+import { statusCode, tooltip } from "../../utils";
 
 function App() {
+  const [status, setStatus] = useState(statusCode.OK);
+
+  const handleStatusChange = (code) => {
+    console.log(code)
+    setStatus(code);
+  };
+
   return (
-    <p>
-      <InspectButton />
-      <Users />
-    </p>
+    <div class="container">
+      <h1 class="title">리뷰 분석기 </h1>
+      <div class="flex-container">
+        <div class="flex-item">
+          <InspectButton handleStatusChange={handleStatusChange} />
+        </div>
+        <div class="flex-item">
+          <GitHubButton />
+        </div>
+      </div>
+
+      {tooltip[status]}
+    </div>
   );
 }
 
-export default App
+export default App;

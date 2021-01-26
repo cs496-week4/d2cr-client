@@ -1,40 +1,48 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import Utils, { reloadTabWithId, getCurrentTabId } from "../../utils";
+import React, { useState } from "react";
+import { reloadTabWithId, getCurrentTabId, createTabWithUrl, isUrlAboutReview, statusCode, NetworkMontior } from "../../utils";
 import API from "../../api";
+import AwesomeButtonProgress from "react-awesome-button/src/components/AwesomeButtonProgress";
+import styles from "react-awesome-button/src/styles/themes/theme-rickiest";
 
-function InspectButton() {
-  const [flag, setFlag] = useState(false);
-  const [requestUrl, setRequestUrl] = useState("");
-
-  const getReviewInspectPage = (url) => {
-    API.getReviewInspectPage(url, (reviewInspectPageUrl) => console.log(reviewInspectPageUrl)); // POST 메소드로 보내기
+function InspectButton({ handleStatusChange }) {
+  const getReviewInspectPage = (url, callback = () => null) => {
+    API.getReviewInspectPage(
+      url,
+      (reviewInspectPageUrl) => {
+        if (reviewInspectPageUrl !== "Hello") {
+          createTabWithUrl(process.env.REACT_APP_WEB_URL + reviewInspectPageUrl);
+          handleStatusChange(statusCode.SUCCEESS)
+        }
+          // TODO error 났을 때 아예 도달하지 못하도록 수정
+      },
+      callback
+    );
   };
 
-  useEffect(() => {
-    if (requestUrl && requestUrl.length > 0) {
-      console.log("requesting...");
-      getReviewInspectPage(requestUrl);
+
+  const handlePress = async (element, next) => {
+    handleStatusChange(statusCode.LOADING)
+    try {
+      getCurrentTabId(reloadTabWithId);
+      console.log("get current tab id");
+
+      const networkMontior = new NetworkMontior()
+      let url = await networkMontior.waitForAllRequests()
+      console.log(url)
+
+      if (url) {
+        if (!url.includes("page=")) url = url + "&page=1";
+        getReviewInspectPage(url, next);
+      }
+      else {
+        handleStatusChange(statusCode.INVALID_PAGE);
+        console.log("유효한 탭이 아님");
+      }
     }
-  }, [requestUrl]);
-  // }, [flag, requestUrl])
-
-  const handleClick = () => {
-    getCurrentTabId(reloadTabWithId);
-
-    chrome.webRequest.onBeforeRequest.addListener(
-      (details) => {
-        if (details.type == "xmlhttprequest" && details.url.includes("review") && details.url.includes("page=")) {
-          console.log(details.url);
-          //   setFlag(true);
-          setRequestUrl(details.url);
-          // API.getReviewInspectPage(details.url, (reviewInspectPageUrl) => console.log(reviewInspectPageUrl)); // POST 메소드로 보내기
-          //   API.getReviewInspectPage(details.url, (reviewInspectPageUrl) => Utils.createTabWithUrl(reviewInspectPageUrl)); // POST 메소드로 보내기
-        }
-      },
-      { urls: ["<all_urls>"] },
-      ["requestBody"]
-    );
+    catch (e) {
+      handleStatusChange(statusCode.NO_ACTIVE_TAB)
+      console.error(e)
+    }
   };
 
   const handleHello = () => {
@@ -42,10 +50,9 @@ function InspectButton() {
   };
 
   return (
-    <p>
-      <button onClick={handleClick}> 검사하기 </button>
-      <button onClick={handleHello}> 안녕 </button>
-    </p>
+    <AwesomeButtonProgress loadingLabel="기다려주세요" resultLabel="다 됐어요!" size="medium" type="primary" onPress={handlePress}>
+      리뷰 분석
+    </AwesomeButtonProgress>
   );
 }
 
