@@ -14,16 +14,21 @@ export const mockCheckUrl = (url) => {
     .catch((e) => console.error(e));
 };
 
-export const getReviewInspectPage = (url, callback) => {
-  const apiUrl = process.env.REACT_APP_API_URL + "/review";
-  axios
-    .post(apiUrl, { url: url }, { headers: headers })
-    .then((res) => {
-      if (res.status === Number(process.env.REACT_APP_TEAPOT)) console.error("review와 iframe을 request url에 포함하지만 리뷰 페이지는 아닌 요청");
-      callback(res.data); // res.data 를 url로 해서 새로운 탭 열기
-    })
-    .catch((e) => console.error(e));
-};
+export const getReviewInspectPage = (urlList, productUrl) => {
+  const apiUrl = process.env.REACT_APP_API_URL + "/inspect";
+  return axios.post(apiUrl, { urlList, productUrl }, { headers })
+}
+
+// export const getReviewInspectPage = (url, productUrl, callback) => {
+//   const apiUrl = process.env.REACT_APP_API_URL + "/review";
+//   axios
+//     .post(apiUrl, { url: url, productUrl: productUrl }, { headers: headers })
+//     .then((res) => {
+//       if (res.status === Number(process.env.REACT_APP_TEAPOT)) console.error("review와 iframe을 request url에 포함하지만 리뷰 페이지는 아닌 요청");
+//       callback(res.data); // res.data 를 url로 해서 새로운 탭 열기
+//     })
+//     .catch((e) => console.error(e));
+// };
 
 export const hello = () => {
   axios

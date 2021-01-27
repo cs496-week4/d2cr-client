@@ -3,14 +3,14 @@ import { isValidUrl} from "./api"
 export const hello = () => console.log("hello modules!");
 export const getCurrentTabUrl = (callback) => {
   chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
-    if (!tabs || tabs.length < 1) console.error("No active tab in this window");
+    if (!tabs || tabs.length < 1) throw new Error("[getCurrentTabUrl] No active tab in this window");
     else callback(tabs[0].url);
   });
 };
 
 export const getCurrentTabId = (callback) => {
   chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
-    if (!tabs || tabs.length < 1) throw new Error("No active tab in this window");
+    if (!tabs || tabs.length < 1) throw new Error("[getCurrentTabId] No active tab in this window");
     else callback(tabs[0].id);
   });
 };
@@ -18,15 +18,17 @@ export const getCurrentTabId = (callback) => {
 export const reloadTabWithId = (id) => {
   chrome.tabs.reload(id);
 };
+
 export const createTabWithUrl = (destination, callback = () => null) => {
   chrome.tabs.create({ url: destination }, callback());
 };
-export const getReviewRequest = (callback) => {};
 
-export const isUrlAboutReview = (url) => url.includes("iframe") && url.includes("product") && url.includes("reviews");
+// export const isUrlAboutReview = (url) => url.includes("iframe") && url.includes("product") && url.includes("reviews");
+export const isUrlAboutReview = (url) => url.includes("reviews");
+
 export const statusCode = {
   OK: "ok",
-  ERROR: "error",
+  SERVER_ERROR: "error",
   SUCCEESS: "success",
   LOADING: "loading",
   INVALID_PAGE: "invalid page",
@@ -43,12 +45,12 @@ export const tooltip = {
 
   [statusCode.INVALID_PAGE]: (
     <div class="flex-container">
-      <h2> {"😱  "} </h2>
+      <h2> {"😅  "} </h2>
       <h3 style={{ color: "#bbb" }}> 분석기를 사용할 수 없는 페이지입니다 </h3>
     </div>
   ),
 
-  [statusCode.ERROR]: (
+  [statusCode.SERVER_ERROR]: (
     <div class="flex-container">
       <h2> {"😱  "} </h2>
       <h3 style={{ color: "#bbb" }}> 에러가 발생했습니다 </h3>
@@ -77,31 +79,17 @@ export const tooltip = {
   ),
 };
 
-export function getRequestUrls() {
-  let urls = [];
-}
-
-
 const DummyPromise = new Promise((resolve, reject) => {
   setTimeout(() => resolve(), 3000)
 })
 export class NetworkMontior {
   constructor() {
-    this.flag = false;
-    this.url = null
-    this.promises = []
+    this.urlList = [];
 
     chrome.webRequest.onBeforeRequest.addListener(
       (details) => {
         if (isUrlAboutReview(details.url)) {
-          console.log(details.url)
-          isValidUrl(details.url)
-          .then(res => {
-            if (res.status === 200) {
-              this.url = details.url
-              console.log(details.url)
-            }
-          })
+          this.urlList.push(details.url)
         }
       },
       { urls: ["<all_urls>"] },
@@ -109,10 +97,10 @@ export class NetworkMontior {
     );
   }
 
-  async waitForAllRequests() {
-    await DummyPromise;
-    // await Promise.all(this.promises).then(results => results.reduce((prev, cur) => prev || cur, false));
-    return this.url
+  async getAllReviewRequests() {
+    await DummyPromise; // wait for 3 seconds to gather request urls
+    return this.urlList;
   }
-
 }
+
+export const processUrl = (url) => (url.includes("page=") ? url : url + "&page=1");

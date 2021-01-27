@@ -1,47 +1,40 @@
 import React, { useState } from "react";
-import { reloadTabWithId, getCurrentTabId, createTabWithUrl, isUrlAboutReview, statusCode, NetworkMontior } from "../../utils";
+import { reloadTabWithId, getCurrentTabId, createTabWithUrl, isUrlAboutReview, statusCode, NetworkMontior, getCurrentTabUrl, processUrl } from "../../utils";
 import API from "../../api";
 import AwesomeButtonProgress from "react-awesome-button/src/components/AwesomeButtonProgress";
 import styles from "react-awesome-button/src/styles/themes/theme-rickiest";
 
 function InspectButton({ handleStatusChange }) {
-  const getReviewInspectPage = (url, callback = () => null) => {
-    API.getReviewInspectPage(
-      url,
-      (reviewInspectPageUrl) => {
-        if (reviewInspectPageUrl !== "Hello") {
-          createTabWithUrl(process.env.REACT_APP_WEB_URL + reviewInspectPageUrl);
-          handleStatusChange(statusCode.SUCCEESS)
-        }
-          // TODO error 났을 때 아예 도달하지 못하도록 수정
-      },
-      callback
-    );
-  };
-
-
   const handlePress = async (element, next) => {
-    handleStatusChange(statusCode.LOADING)
+    handleStatusChange(statusCode.LOADING);
+
     try {
-      getCurrentTabId(reloadTabWithId);
-      console.log("get current tab id");
+      getCurrentTabUrl((productUrl) => {
+        getCurrentTabId(async (tabId) => {
+          try {
+            const isInspectable = await API.checkInspectable(productUrl);
+            if (!isInspectable) {
+              handleStatusChange(statusCode.INVALID_PAGE);
+            } else {
+              const networkMontior = new NetworkMontior();
+              reloadTabWithId(tabId);
+              let urlList = await networkMontior.getAllReviewRequests();
+              console.log("networkMonitor returned: ", urlList);
 
-      const networkMontior = new NetworkMontior()
-      let url = await networkMontior.waitForAllRequests()
-      console.log(url)
-
-      if (url) {
-        if (!url.includes("page=")) url = url + "&page=1";
-        getReviewInspectPage(url, next);
-      }
-      else {
-        handleStatusChange(statusCode.INVALID_PAGE);
-        console.log("유효한 탭이 아님");
-      }
-    }
-    catch (e) {
-      handleStatusChange(statusCode.NO_ACTIVE_TAB)
-      console.error(e)
+              const reviewInspectPageUrl = await API.getReviewInspectPage(urlList, productUrl);
+              createTabWithUrl(process.env.REACT_APP_WEB_URL + reviewInspectPageUrl);
+            }
+          } catch (e) {
+            console.error(e);
+            handleStatusChange(statusCode.SERVER_ERROR);
+          }
+        });
+      });
+    } catch (e) {
+      console.error(e);
+      handleStatusChange(statusCode.NO_ACTIVE_TAB);
+    } finally {
+      next();
     }
   };
 
