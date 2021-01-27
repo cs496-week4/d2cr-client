@@ -1,5 +1,3 @@
-import { isValidUrl} from "./api"
-
 export const hello = () => console.log("hello modules!");
 export const getCurrentTabUrl = (callback) => {
   chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
@@ -79,28 +77,28 @@ export const tooltip = {
   ),
 };
 
-const DummyPromise = new Promise((resolve, reject) => {
-  setTimeout(() => resolve(), 3000)
-})
-export class NetworkMontior {
-  constructor() {
-    this.urlList = [];
+export const mountRequestListener = (callback) => {
+  let urlList = []
 
-    chrome.webRequest.onBeforeRequest.addListener(
-      (details) => {
-        if (isUrlAboutReview(details.url)) {
-          this.urlList.push(details.url)
-        }
-      },
-      { urls: ["<all_urls>"] },
-      ["requestBody"]
-    );
-  }
+  chrome.webRequest.onBeforeRequest.addListener(
+    (details) => {
+      if (isUrlAboutReview(details.url)) {
+        log("add url");
+        urlList.push(details.url);
+      }
+    },
+    { urls: ["<all_urls>"] },
+    ["requestBody"]
+  );
 
-  async getAllReviewRequests() {
-    await DummyPromise; // wait for 3 seconds to gather request urls
-    return this.urlList;
-  }
-}
+  chrome.tabs.reload()
+  // getCurrentTabId(reloadTabWithId);
 
-export const processUrl = (url) => (url.includes("page=") ? url : url + "&page=1");
+  setTimeout(() => {
+    log(urlList)
+    callback(urlList)
+  }, 10000)
+};
+
+export const log = (str) => chrome.extension.getBackgroundPage().console.log(str);
+export const error = (str) => chrome.extension.getBackgroundPage().console.error(str);

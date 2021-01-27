@@ -1,45 +1,58 @@
 import React, { useState } from "react";
-import { reloadTabWithId, getCurrentTabId, createTabWithUrl, isUrlAboutReview, statusCode, NetworkMontior, getCurrentTabUrl, processUrl } from "../../utils";
-import API from "../../api";
+import { log, createTabWithUrl, statusCode, getCurrentTabUrl, mountRequestListener } from "../../utils";
+import { getReviewInspectPage, checkInspectable, hello, headers } from "../../api";
 import AwesomeButtonProgress from "react-awesome-button/src/components/AwesomeButtonProgress";
 import styles from "react-awesome-button/src/styles/themes/theme-rickiest";
+import axios from "axios";
 
 function InspectButton({ handleStatusChange }) {
+  const registerBookmark = (reviewInspectPageUrl) => {
+    
+  }
+
   const handlePress = async (element, next) => {
     handleStatusChange(statusCode.LOADING);
+    const apiUrl = process.env.REACT_APP_API_URL + "/inspect";
 
     try {
       getCurrentTabUrl((productUrl) => {
-        getCurrentTabId(async (tabId) => {
-          try {
-            const isInspectable = await API.checkInspectable(productUrl);
-            if (!isInspectable) {
-              handleStatusChange(statusCode.INVALID_PAGE);
+        try {
+          checkInspectable(productUrl).then((res) => {
+            if (res.data === "valid") {
+              mountRequestListener((urlList) => {
+                try {
+                  axios.post(apiUrl, { productUrl, urlList: urlList }, { headers }).then((res) => {
+                    const reviewInspectPageUrl = process.env.REACT_APP_WEB_URL + res.data;
+                    createTabWithUrl(reviewInspectPageUrl);
+                    log(`reviewInspectPageUrl: ${reviewInspectPageUrl}`);
+                    registerBookmark(reviewInspectPageUrl)
+                    next();
+                  });
+                } catch (e) {
+                  handleStatusChange(statusCode.SERVER_ERROR);
+                  next();
+                }
+              });
             } else {
-              const networkMontior = new NetworkMontior();
-              reloadTabWithId(tabId);
-              let urlList = await networkMontior.getAllReviewRequests();
-              console.log("networkMonitor returned: ", urlList);
-
-              const reviewInspectPageUrl = await API.getReviewInspectPage(urlList, productUrl);
-              createTabWithUrl(process.env.REACT_APP_WEB_URL + reviewInspectPageUrl);
+              log("invalid page: register page to contribute");
+              handleStatusChange(statusCode.INVALID_PAGE);
+              next();
             }
-          } catch (e) {
-            console.error(e);
-            handleStatusChange(statusCode.SERVER_ERROR);
-          }
-        });
+          });
+        } catch (e) {
+          handleStatusChange(statusCode.SERVER_ERROR);
+          next();
+        }
       });
     } catch (e) {
-      console.error(e);
+      log("no active tab (refresh required)");
       handleStatusChange(statusCode.NO_ACTIVE_TAB);
-    } finally {
       next();
     }
   };
 
   const handleHello = () => {
-    API.hello();
+    hello();
   };
 
   return (
