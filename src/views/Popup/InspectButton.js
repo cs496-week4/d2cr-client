@@ -24,7 +24,7 @@ function InspectButton({ handleStatusChange, showContributeButton }) {
               mountRequestListener((urlList) => {
                 try {
                   axios.post(apiUrl, { productUrl, urlList: urlList }, { headers }).then((res) => {
-                    const reviewInspectPageUrl = process.env.REACT_APP_WEB_URL + res.data;
+                    const reviewInspectPageUrl = process.env.REACT_APP_WEB_URL + "page/" + res.data;
                     createTabWithUrl(reviewInspectPageUrl);
                     log(`reviewInspectPageUrl: ${reviewInspectPageUrl}`);
                     registerBookmark(reviewInspectPageUrl, productUrl);
