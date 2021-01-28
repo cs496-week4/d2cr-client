@@ -21,8 +21,9 @@ export const createTabWithUrl = (destination, callback = () => null) => {
   chrome.tabs.create({ url: destination }, callback());
 };
 
-// export const isUrlAboutReview = (url) => url.includes("iframe") && url.includes("product") && url.includes("reviews");
-export const isUrlAboutReview = (url) => url.includes("reviews");
+export const isRequestAboutReview = (details) => {
+  return details.url.includes("reviews") && details.type !== "image";
+};
 
 export const statusCode = {
   OK: "ok",
@@ -82,7 +83,7 @@ export const mountRequestListener = (callback) => {
 
   chrome.webRequest.onBeforeRequest.addListener(
     (details) => {
-      if (isUrlAboutReview(details.url)) {
+      if (isRequestAboutReview(details)) {
         log("add url");
         urlList.push(details.url);
       }
@@ -92,7 +93,6 @@ export const mountRequestListener = (callback) => {
   );
 
   chrome.tabs.reload();
-  // getCurrentTabId(reloadTabWithId);
 
   setTimeout(() => {
     log(urlList);
@@ -103,27 +103,6 @@ export const mountRequestListener = (callback) => {
 export const log = (str) => chrome.extension.getBackgroundPage().console.log(str);
 export const error = (str) => chrome.extension.getBackgroundPage().console.error(str);
 
-export const findBookmarkFolder = (hostName) => {};
-
-const bfs_bookmarkTree_void = (bookmarks, callback) => {
-  bookmarks.forEach((bookmark) => {
-    callback(bookmark);
-    if (bookmark.children) bfs_bookmarkTree_void(bookmark.children, callback);
-  });
-};
-
-const bfs_bookmarkTree_bool = (bookmarks, callback) => {
-  for (let i = 0; i < bookmarks.length; i++) {
-    const bookmark = bookmarks[i];
-    if (callback(bookmark)) return true;
-    if (bookmark.children) {
-      if (bfs_bookmarkTree_bool(bookmark.children, callback)) return true;
-    }
-  }
-  return false;
-};
-
-export const hasSubFolder = (hostName) => {};
 
 const findBookmark = (bookmarks, title) => {
   for (let i = 0; i < bookmarks.length; i++) {
@@ -142,7 +121,7 @@ export const getFolder = (results) => {
 };
 
 export const getSubFolder = (folder, hostName) => {
-  if (!folder) return null
+  if (!folder) return null;
   return findBookmark(folder.children, hostName);
 };
 
@@ -159,7 +138,6 @@ export const createFolder = (callback, params) => {
     }
   );
 };
-
 
 export const createFolderSubFolderBookmark = ({ hostName, url }) => {
   createFolder(createSubFolderBookMark, { hostName, url });
@@ -184,20 +162,22 @@ export const createSubFolder = (folder, hostName, callback, params) => {
   );
 };
 
-
 export const createBookmark = ({ subFolder, url }) => {
   log(`createBookmark: ${subFolder.id} ${subFolder.title} ${url}`);
 
-  chrome.bookmarks.create({
-    parentId: subFolder.id,
-    title: url,
-    url: url,
-  }, (bookmark) => {
-    log(`created bookmark: ${bookmark.id} `)
-  });
+  chrome.bookmarks.create(
+    {
+      parentId: subFolder.id,
+      title: url,
+      url: url,
+    },
+    (bookmark) => {
+      log(`created bookmark: ${bookmark.id} `);
+    }
+  );
 };
 
-export const BG_MSG = {
-  createBookmark: "createBookmark",
-  createSubFolderBookMark: "createSubFolderBookMark",
+export const getHostName = (productUrl) => {
+  const url = new URL(productUrl);
+  return url.hostname;
 };

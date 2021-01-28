@@ -1,15 +1,16 @@
 import React, { useState } from "react";
-import { log, createTabWithUrl, statusCode, getCurrentTabUrl, mountRequestListener } from "../../utils";
+import { log, createTabWithUrl, statusCode, getCurrentTabUrl, mountRequestListener, getHostName } from "../../utils";
 import { getReviewInspectPage, checkInspectable, hello, headers } from "../../api";
 import AwesomeButtonProgress from "react-awesome-button/src/components/AwesomeButtonProgress";
 import styles from "react-awesome-button/src/styles/themes/theme-rickiest";
 import axios from "axios";
 
-function InspectButton({ handleStatusChange }) {
-
+function InspectButton({ handleStatusChange, showContributeButton }) {
   const registerBookmark = (reviewInspectPageUrl, productUrl) => {
-    
-  }
+    const hostName = getHostName(productUrl);
+    const bg = chrome.extension.getBackgroundPage();
+    bg.addBookmark(hostName, reviewInspectPageUrl);
+  };
 
   const handlePress = async (element, next) => {
     handleStatusChange(statusCode.LOADING);
@@ -26,7 +27,7 @@ function InspectButton({ handleStatusChange }) {
                     const reviewInspectPageUrl = process.env.REACT_APP_WEB_URL + res.data;
                     createTabWithUrl(reviewInspectPageUrl);
                     log(`reviewInspectPageUrl: ${reviewInspectPageUrl}`);
-                    registerBookmark(reviewInspectPageUrl, productUrl)
+                    registerBookmark(reviewInspectPageUrl, productUrl);
                     next();
                   });
                 } catch (e) {
@@ -37,6 +38,7 @@ function InspectButton({ handleStatusChange }) {
             } else {
               log("invalid page: register page to contribute");
               handleStatusChange(statusCode.INVALID_PAGE);
+              showContributeButton()
               next();
             }
           });
