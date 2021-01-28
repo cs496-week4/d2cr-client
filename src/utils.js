@@ -78,7 +78,7 @@ export const tooltip = {
 };
 
 export const mountRequestListener = (callback) => {
-  let urlList = []
+  let urlList = [];
 
   chrome.webRequest.onBeforeRequest.addListener(
     (details) => {
@@ -91,14 +91,113 @@ export const mountRequestListener = (callback) => {
     ["requestBody"]
   );
 
-  chrome.tabs.reload()
+  chrome.tabs.reload();
   // getCurrentTabId(reloadTabWithId);
 
   setTimeout(() => {
-    log(urlList)
-    callback(urlList)
-  }, 10000)
+    log(urlList);
+    callback(urlList);
+  }, 10000);
 };
 
 export const log = (str) => chrome.extension.getBackgroundPage().console.log(str);
 export const error = (str) => chrome.extension.getBackgroundPage().console.error(str);
+
+export const findBookmarkFolder = (hostName) => {};
+
+const bfs_bookmarkTree_void = (bookmarks, callback) => {
+  bookmarks.forEach((bookmark) => {
+    callback(bookmark);
+    if (bookmark.children) bfs_bookmarkTree_void(bookmark.children, callback);
+  });
+};
+
+const bfs_bookmarkTree_bool = (bookmarks, callback) => {
+  for (let i = 0; i < bookmarks.length; i++) {
+    const bookmark = bookmarks[i];
+    if (callback(bookmark)) return true;
+    if (bookmark.children) {
+      if (bfs_bookmarkTree_bool(bookmark.children, callback)) return true;
+    }
+  }
+  return false;
+};
+
+export const hasSubFolder = (hostName) => {};
+
+const findBookmark = (bookmarks, title) => {
+  for (let i = 0; i < bookmarks.length; i++) {
+    const bookmark = bookmarks[i];
+    if (bookmark.title === title) return bookmark;
+    if (bookmark.children) {
+      let childPossiblyCorrect = findBookmark(bookmark.children, title);
+      if (childPossiblyCorrect) return childPossiblyCorrect;
+    }
+  }
+  return null;
+};
+
+export const getFolder = (results) => {
+  return findBookmark(results, "리뷰 분석");
+};
+
+export const getSubFolder = (folder, hostName) => {
+  if (!folder) return null
+  return findBookmark(folder.children, hostName);
+};
+
+export const createFolder = (callback, params) => {
+  log("createFolder");
+  chrome.bookmarks.create(
+    {
+      parentId: "1",
+      title: "리뷰 분석",
+    },
+
+    (folder) => {
+      callback({ ...params, folder });
+    }
+  );
+};
+
+
+export const createFolderSubFolderBookmark = ({ hostName, url }) => {
+  createFolder(createSubFolderBookMark, { hostName, url });
+};
+
+export const createSubFolderBookMark = ({ folder, hostName, url }) => {
+  createSubFolder(folder, hostName, createBookmark, { url });
+};
+
+export const createSubFolder = (folder, hostName, callback, params) => {
+  log(`createSubFolder: ${folder.id}  ${folder.title} ${hostName}`);
+
+  chrome.bookmarks.create(
+    {
+      parentId: folder.id,
+      title: hostName,
+    },
+    (subFolder) => {
+      log("created subfolder: " + subFolder.id);
+      callback({ ...params, subFolder });
+    }
+  );
+};
+
+
+export const createBookmark = ({ subFolder, url }) => {
+  log(`createBookmark: ${subFolder.id} ${subFolder.title} ${url}`);
+
+  chrome.bookmarks.create({
+    parentId: subFolder.id,
+    title: url,
+    url: url,
+  }, (bookmark) => {
+    log(`created bookmark: ${bookmark.id} `)
+  });
+};
+
+export const BG_MSG = {
+  createBookmark: "createBookmark",
+  createSubFolderBookMark: "createSubFolderBookMark",
+};

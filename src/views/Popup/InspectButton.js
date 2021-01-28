@@ -6,7 +6,8 @@ import styles from "react-awesome-button/src/styles/themes/theme-rickiest";
 import axios from "axios";
 
 function InspectButton({ handleStatusChange }) {
-  const registerBookmark = (reviewInspectPageUrl) => {
+
+  const registerBookmark = (reviewInspectPageUrl, productUrl) => {
     
   }
 
@@ -25,7 +26,7 @@ function InspectButton({ handleStatusChange }) {
                     const reviewInspectPageUrl = process.env.REACT_APP_WEB_URL + res.data;
                     createTabWithUrl(reviewInspectPageUrl);
                     log(`reviewInspectPageUrl: ${reviewInspectPageUrl}`);
-                    registerBookmark(reviewInspectPageUrl)
+                    registerBookmark(reviewInspectPageUrl, productUrl)
                     next();
                   });
                 } catch (e) {
