@@ -1,5 +1,5 @@
 # d2cr-client
-![title](./title.png?raw=true "Title image)
+![title](./title.png?raw=true "Title image")
 
 D2C 업체들의 웹사이트에서 제품 리뷰를 분석해주는 Chrome Extension
 
